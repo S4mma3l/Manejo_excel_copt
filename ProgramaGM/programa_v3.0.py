@@ -36,16 +36,15 @@ def _eliminar_mm_interno(directorio, archivo_consolidado_nombre='Fusion.xlsx'):
     """
     Elimina 'mm' de las celdas de texto en archivos Excel de un directorio.
     Retorna True si se completa (incluso si no hay archivos), False si hay errores graves.
-    (Lógica idéntica a la versión anterior)
     """
     print(f"--- Iniciando eliminación de 'mm' en: {directorio} ---")
     try:
         archivos_excel = [f for f in os.listdir(directorio) if f.endswith('.xlsx') and not f.startswith('~$') and f != archivo_consolidado_nombre]
     except FileNotFoundError:
-        messagebox.showerror("Error", f"El directorio seleccionado no existe:\n{directorio}", parent=ventana_principal) # Añadir parent
+        messagebox.showerror("Error", f"El directorio seleccionado no existe:\n{directorio}", parent=ventana_principal)
         return False
     except Exception as e:
-        messagebox.showerror("Error", f"Error al listar archivos en el directorio:\n{directorio}\n{e}", parent=ventana_principal) # Añadir parent
+        messagebox.showerror("Error", f"Error al listar archivos en el directorio:\n{directorio}\n{e}", parent=ventana_principal)
         return False
 
     if not archivos_excel:
@@ -58,42 +57,47 @@ def _eliminar_mm_interno(directorio, archivo_consolidado_nombre='Fusion.xlsx'):
         ruta_archivo = os.path.join(directorio, archivo)
         try:
             print(f"Procesando {archivo} para eliminar 'mm'...")
-            # Usamos un enfoque más simple: leer, modificar en memoria, escribir
-            df = pd.read_excel(ruta_archivo, sheet_name=None, engine='openpyxl') # Lee todas las hojas en un dict
+            df_dict = pd.read_excel(ruta_archivo, sheet_name=None, engine='openpyxl') # Lee todas las hojas en un dict
             df_modificados = {}
             archivo_modificado_en_hoja = False
 
-            for sheet_name, df_hoja in df.items():
-                # Convertir todo a string temporalmente para reemplazo seguro
-                df_str = df_hoja.astype(str)
-                if df_str.apply(lambda col: col.str.contains('mm', case=False, na=False)).any().any():
-                    # Aplicar reemplazo (case-insensitive) y quitar espacios extra
-                    df_hoja_mod = df_hoja.map(lambda x: x.replace('mm', '').replace('MM', '').strip() if isinstance(x, str) else x)
-                    if not df_hoja.equals(df_hoja_mod):
-                        df_modificados[sheet_name] = df_hoja_mod
-                        archivo_modificado_en_hoja = True
-                        print(f"  'mm' encontrado y eliminado en hoja '{sheet_name}' de {archivo}.")
-                    else:
-                        df_modificados[sheet_name] = df_hoja # Mantener la hoja original si no hubo cambios reales
+            for sheet_name, df_hoja in df_dict.items():
+                # Convertir todo a string temporalmente para reemplazo seguro? NO, applymap maneja tipos
+                # df_str = df_hoja.astype(str) # No es estrictamente necesario con applymap si la lambda maneja tipos
+
+                # --- CORRECCIÓN AQUÍ ---
+                # Usar applymap para aplicar la función a cada celda del DataFrame
+                df_hoja_mod = df_hoja.applymap(lambda x: x.replace('mm', '').replace('MM', '').strip() if isinstance(x, str) else x)
+                # --- FIN CORRECCIÓN ---
+
+                # Verificar si hubo cambios reales antes de marcar como modificado
+                # (Comparar DataFrames puede ser costoso, pero es más preciso)
+                # Una forma más simple es verificar si la función *podría* haber hecho un cambio
+                # if df_str.apply(lambda col: col.str.contains('mm', case=False, na=False)).any().any(): # Verificación previa (opcional)
+
+                if not df_hoja.equals(df_hoja_mod):
+                    df_modificados[sheet_name] = df_hoja_mod
+                    archivo_modificado_en_hoja = True
+                    print(f"  'mm' encontrado y eliminado en hoja '{sheet_name}' de {archivo}.")
                 else:
-                    df_modificados[sheet_name] = df_hoja # Mantener la hoja original
+                    df_modificados[sheet_name] = df_hoja # Mantener la hoja original si no hubo cambios reales
 
             if archivo_modificado_en_hoja:
-                 # Escribir SOLO si hubo cambios
                  with pd.ExcelWriter(ruta_archivo, engine='openpyxl') as writer:
                      for sheet_name, df_final in df_modificados.items():
                          df_final.to_excel(writer, sheet_name=sheet_name, index=False)
                  modificado_alguno = True
+                 print(f"  Archivo '{archivo}' modificado y guardado.")
             else:
-                print(f"  No se encontró 'mm' (o no hubo cambios tras quitarlo) en {archivo}.")
+                print(f"  No se realizaron modificaciones detectables en {archivo}.")
 
         except Exception as e:
             error_msg = f"Error al procesar {archivo} durante eliminación de 'mm': {e}\n{traceback.format_exc()}"
             print(error_msg)
-            errores.append(error_msg)
+            errores.append(f"Error procesando {archivo}: {e}") # Mensaje más corto para el messagebox
 
     if errores:
-        messagebox.showwarning("Advertencia Eliminación 'mm'", "Ocurrieron errores al eliminar 'mm' en algunos archivos:\n\n" + "\n".join(errores), parent=ventana_principal) # Añadir parent
+        messagebox.showwarning("Advertencia Eliminación 'mm'", "Ocurrieron errores al eliminar 'mm' en algunos archivos:\n\n" + "\n".join(errores), parent=ventana_principal)
     elif modificado_alguno:
          print("Proceso de eliminación de 'mm' completado con modificaciones.")
     else:
@@ -196,7 +200,7 @@ def _asignar_materiales_interno(ruta_archivo_consolidado):
     mapa_espesores = {
         16: 'MELAMINA 16 MM', 19: 'EUCALIPTO 18 MM', 20: 'MADERA MELINA',
         18: 'MELAMINA 18 MM', 22: 'MADERA MELINA', 10: 'MADERA MELINA',
-        25: 'BUTCHERBLOCK', 3: 'MADERA MELINA', 2: 'MADERA MELINA',
+        25: 'BUTCHERBLOCK', 3: 'MADERA MELINA', 2: 'MADERA MELINA', 42: 'BUTCHERBLOCK', 50: 'BUTCHERBLOCK',
     }
 
     try:
