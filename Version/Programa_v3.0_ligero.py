@@ -168,7 +168,7 @@ def _asignar_materiales_interno(ruta_archivo_consolidado):
     if not ruta_archivo_consolidado or not os.path.exists(ruta_archivo_consolidado):
         messagebox.showerror("Error Asignación", f"El archivo consolidado '{os.path.basename(ruta_archivo_consolidado)}' no existe o no se pudo crear.", parent=ventana_principal)
         return False
-    mapa_espesores = {16: 'MELAMINA 16 MM', 19: 'EUCALIPTO 18 MM', 20: 'MADERA MELINA', 18: 'MELAMINA 18 MM/EUCALIPTO 18 MM', 
+    mapa_espesores = {16: 'MELAMINA 16 MM', 19: 'EUCALIPTO 18 MM', 20: 'MADERA MELINA', 18: 'MELAMINA 18 MM', 
                       22: 'MADERA MELINA', 10: 'MADERA MELINA', 25: 'BUTCHERBLOCK', 3: 'MADERA MELINA', 2: 'MADERA MELINA', 
                       42: 'BUTCHERBLOCK', 50: 'BUTCHERBLOCK', 5: 'MADERA MELINA', 17: 'MELAMINA 18MM', 9: 'PLYWOOD/MADERA DURA'}
     try:
